@@ -1965,7 +1965,7 @@ func getRangeIntWithDefault(id int, r []string, fldName string, min int, max int
 func getFloat(id int, r []string, fldName string, req bool) float32 {
 	if id >= 0 && id < len(r) && len(r[id]) > 0 {
 		// Skip positive sign
-		float := r[id];
+		float := r[id]
 		if float[0] == '+' {
 			float = float[1:]
 		}
@@ -2147,8 +2147,9 @@ func getDate(id int, r []string, flds Fields, req bool, ignErrs bool, feed *Feed
 		e = fmt.Errorf("month must be in the range [1, 12]")
 	}
 
+	// truncate years so they fit into uint8. Dates that far into the future aren't clearly defined anyway
 	if e == nil && year < 1900 || year > (1900+255) {
-		e = fmt.Errorf("date must be in the range [19000101, 21551231]")
+		year = min(year, 1900+255)
 	}
 
 	if e != nil {
