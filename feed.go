@@ -97,6 +97,7 @@ type CsvFile struct {
 // A ParseOptions object holds options for parsing a the feed
 type ParseOptions struct {
 	UseDefValueOnError           bool
+	SkipStopTimeValidation       bool
 	DropErroneous                bool
 	DryRun                       bool
 	CheckNullCoordinates         bool
@@ -229,7 +230,7 @@ func NewFeed() *Feed {
 		NumShpPoints:          0,
 		NumStopTimes:          0,
 		fastParsePossible:     true,
-		opts:                  ParseOptions{false, false, false, false, "", "", false, false, false, false, gtfs.Date{}, gtfs.Date{}, make([]Polygon, 0), false, make(map[int16]bool, 0), make(map[int16]bool, 0), false, false, false, false},
+		opts:                  ParseOptions{false, false, false, false, false, "", "", false, false, false, false, gtfs.Date{}, gtfs.Date{}, make([]Polygon, 0), false, make(map[int16]bool, 0), make(map[int16]bool, 0), false, false, false, false},
 	}
 	g.lastString = &g.emptyString
 
@@ -2026,7 +2027,7 @@ func (feed *Feed) checkStopTimeMeasure(trip *gtfs.Trip, opt *ParseOptions) error
 	for j := 1; j < len(trip.StopTimes)+deleted; j++ {
 		i := j - deleted
 
-		if trip.StopTimes[i-1].Sequence() == trip.StopTimes[i].Sequence() {
+		if trip.StopTimes[i-1].Sequence() == trip.StopTimes[i].Sequence() && !feed.opts.SkipStopTimeValidation {
 			e := fmt.Errorf("in trip '%s' for stoptime with seq=%d: stop time sequence collision. Sequence has to increase along trip", trip.Id, trip.StopTimes[i].Sequence())
 			if feed.opts.DropErroneous {
 				feed.ErrorStats.DroppedStopTimes++
