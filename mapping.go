@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/public-transport/gtfsparser/gtfs"
+	"github.com/Leocraft1/gtfsparser-with-reader/gtfs"
 	"github.com/valyala/fastjson/fastfloat"
 	"golang.org/x/text/language"
 )
