@@ -48,7 +48,7 @@ func (feed *Feed) PrefixParseReader(reader io.Reader, prefix string) error {
 	// with -De
 	filteredTrips := make(map[string]struct{}, 0)
 
-		e = feed.withFile(zip_reader, "agency.txt", true, func(r io.Reader) error {
+	e = feed.withFile(zip_reader, "agency.txt", true, func(r io.Reader) error {
 		return feed.parseAgenciesReader(r, prefix, feed.opts.EmptyAgencyUrlRepl)
 	})
 	if e == nil {
@@ -1307,63 +1307,6 @@ func (feed *Feed) parsePathwaysReader(file io.Reader, prefix string, geofiltered
 	}
 
 	feed.ColOrders.Pathways = append([]string(nil), reader.header...)
-
-	return e
-}
-
-func (feed *Feed) parseTranslationsReader(file io.Reader, prefix string) (err error) {
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = ParseError{"translations.txt", reader.Curline, r.(error).Error()}
-		}
-	}()
-
-	var e error
-	var record []string
-	flds := TranslationFields{
-		tableName:   reader.headeridx.GetFldId("table_name", -1),
-		fieldName:   reader.headeridx.GetFldId("field_name", -2),
-		language:    reader.headeridx.GetFldId("language", -3),
-		translation: reader.headeridx.GetFldId("translation", -4),
-		recordId:    reader.headeridx.GetFldId("record_id", -5),
-		recordSubId: reader.headeridx.GetFldId("record_sub_id", -6),
-		fieldValue:  reader.headeridx.GetFldId("field_value", -7),
-	}
-
-	addFlds := make([]int, 0)
-
-	if feed.opts.KeepAddFlds {
-		addFlds = addiFields(reader.header, flds)
-	}
-
-	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
-		trans, e := createTranslation(record, flds, feed, prefix)
-		if e != nil {
-			if feed.opts.DropErroneous {
-				feed.ErrorStats.DroppedTranslations++
-				feed.warn(e)
-				continue
-			} else {
-				panic(e)
-			}
-		}
-
-		feed.ErrorStats.NumTranslations++
-
-		for _, i := range addFlds {
-			if i < len(record) {
-				if _, ok := feed.TranslationsAddFlds[reader.header[i]]; !ok {
-					feed.TranslationsAddFlds[reader.header[i]] = make(map[*gtfs.Translation]string)
-				}
-
-				feed.TranslationsAddFlds[reader.header[i]][trans] = record[i]
-			}
-		}
-	}
-
-	feed.ColOrders.Attributions = append([]string(nil), reader.header...)
 
 	return e
 }
