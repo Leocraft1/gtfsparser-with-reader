@@ -1,4 +1,4 @@
-package gtfsparser
+package gtfsparserwr
 
 import (
 	"archive/zip"
