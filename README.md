@@ -2,14 +2,19 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/public-transport/gtfsparser)](https://goreportcard.com/report/github.com/public-transport/gtfsparser) [![GoDoc](https://godoc.org/github.com/public-transport/gtfsparser?status.png)](https://godoc.org/github.com/public-transport/gtfsparser)
 
-A complete*, easy to use parsing library for GTFS data. Implemented in go. Accepts folders containing GTFS files and ZIPs. Feeds are validated during parsing. ID references are transformed into pointer references where appropriate.
+A complete*, easy to use parsing library for GTFS data. Implemented in go. Accepts folders containing GTFS files, ZIPs or io.Readers of zip files. Feeds are validated during parsing. ID references are transformed into pointer references where appropriate.
 
 This is a fork from the gtfsparser I developed at geOps, containing some minor improvements. Because of some changes to member types, this is _not_ a drop-in replacement for the geOps gtfsparser.
 
 ## Usage
 
+Normal usage:
     feed := gtfsparser.NewFeed()
     error := feed.Parse("sample-feed.zip")
+
+Reader usage:
+    feed := gtfsparser.NewFeed()
+    error := feed.ParseReader(reader)
 
 See feed.go for exported fields.
 
