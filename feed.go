@@ -2027,7 +2027,7 @@ func (feed *Feed) checkStopTimeMeasure(trip *gtfs.Trip, opt *ParseOptions) error
 	for j := 1; j < len(trip.StopTimes)+deleted; j++ {
 		i := j - deleted
 
-		if trip.StopTimes[i-1].Sequence() == trip.StopTimes[i].Sequence() && !feed.Opts.SkipStopTimeValidation {
+		if trip.StopTimes[i-1].Sequence() == trip.StopTimes[i].Sequence() {
 			e := fmt.Errorf("in trip '%s' for stoptime with seq=%d: stop time sequence collision. Sequence has to increase along trip", trip.Id, trip.StopTimes[i].Sequence())
 			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedStopTimes++
@@ -2040,7 +2040,7 @@ func (feed *Feed) checkStopTimeMeasure(trip *gtfs.Trip, opt *ParseOptions) error
 			}
 		}
 
-		if !trip.StopTimes[i-1].Departure_time().Empty() && !trip.StopTimes[i].Arrival_time().Empty() && trip.StopTimes[i-1].Departure_time().SecondsSinceMidnight() > trip.StopTimes[i].Arrival_time().SecondsSinceMidnight() {
+		if (!trip.StopTimes[i-1].Departure_time().Empty() && !trip.StopTimes[i].Arrival_time().Empty() && trip.StopTimes[i-1].Departure_time().SecondsSinceMidnight() > trip.StopTimes[i].Arrival_time().SecondsSinceMidnight()) && !feed.Opts.SkipStopTimeValidation {
 			e := fmt.Errorf("in trip '%s' for stoptime with seq=%d the arrival time is before the departure in the previous station", trip.Id, trip.StopTimes[i].Sequence())
 			if opt.DropErroneous {
 				feed.ErrorStats.DroppedStopTimes++
