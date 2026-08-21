@@ -193,7 +193,7 @@ type Feed struct {
 
 	fastParsePossible bool
 
-	opts ParseOptions
+	Opts ParseOptions
 }
 
 // NewFeed creates a new, empty feed
@@ -230,7 +230,7 @@ func NewFeed() *Feed {
 		NumShpPoints:          0,
 		NumStopTimes:          0,
 		fastParsePossible:     true,
-		opts:                  ParseOptions{false, false, false, false, false, "", "", false, false, false, false, gtfs.Date{}, gtfs.Date{}, make([]Polygon, 0), false, make(map[int16]bool, 0), make(map[int16]bool, 0), false, false, false, false},
+		Opts:                  ParseOptions{false, false, false, false, false, "", "", false, false, false, false, gtfs.Date{}, gtfs.Date{}, make([]Polygon, 0), false, make(map[int16]bool, 0), make(map[int16]bool, 0), false, false, false, false},
 	}
 	g.lastString = &g.emptyString
 
@@ -239,7 +239,7 @@ func NewFeed() *Feed {
 
 // SetParseOpts sets the ParseOptions for this feed
 func (feed *Feed) SetParseOpts(opts ParseOptions) {
-	feed.opts = opts
+	feed.Opts = opts
 }
 
 // Parse the GTFS data in the specified folder into the feed
@@ -267,7 +267,7 @@ func (feed *Feed) PrefixParse(path string, prefix string) error {
 	// with -De
 	filteredTrips := make(map[string]struct{}, 0)
 
-	e = feed.parseAgencies(path, prefix, feed.opts.EmptyAgencyUrlRepl)
+	e = feed.parseAgencies(path, prefix, feed.Opts.EmptyAgencyUrlRepl)
 	if e == nil {
 		e = feed.parseFeedInfos(path)
 	}
@@ -335,7 +335,7 @@ func (feed *Feed) PrefixParse(path string, prefix string) error {
 	// }
 
 	//At this point, all possible GTFS is parsed, if there are extra files, it puts them under AdditionalFiles or AdditionalCsvFiles
-	if e == nil && feed.opts.KeepAddFlds {
+	if e == nil && feed.Opts.KeepAddFlds {
 		var files []string
 		files, e = feed.listFiles(path)
 		for _, file := range files {
@@ -350,7 +350,7 @@ func (feed *Feed) PrefixParse(path string, prefix string) error {
 
 			// assume that .txt means CSV
 			if strings.HasSuffix(file, ".txt") {
-				reader := NewCsvParser(r, feed.opts.DropErroneous, false)
+				reader := NewCsvParser(r, feed.Opts.DropErroneous, false)
 				var csv CsvFile
 				csv.Header = reader.GetHeader()
 				for record := reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
@@ -376,11 +376,11 @@ func (feed *Feed) PrefixParse(path string, prefix string) error {
 		feed.curFileHandle = nil
 	}
 
-	if !feed.opts.DateFilterStart.IsEmpty() || !feed.opts.DateFilterEnd.IsEmpty() {
+	if !feed.Opts.DateFilterStart.IsEmpty() || !feed.Opts.DateFilterEnd.IsEmpty() {
 		feed.filterServices()
 	}
 
-	if feed.opts.DropSingleStopTrips {
+	if feed.Opts.DropSingleStopTrips {
 		for _, t := range feed.Trips {
 			if len(t.StopTimes) < 2 {
 				feed.DeleteTrip(t.Id)
@@ -435,7 +435,7 @@ func (feed *Feed) getFile(path string, name string) (io.Reader, error) {
 	// check for any directory that is a ZIP file
 	zipDir := feed.getGTFSDir()
 
-	if !feed.opts.ZipFix {
+	if !feed.Opts.ZipFix {
 		zipDir = ""
 	}
 
@@ -482,7 +482,7 @@ func (feed *Feed) listFiles(path string) ([]string, error) {
 	// check for any directory that is a ZIP file
 	zipDir := feed.getGTFSDir()
 
-	if !feed.opts.ZipFix {
+	if !feed.Opts.ZipFix {
 		zipDir = ""
 	}
 
@@ -503,7 +503,7 @@ func (feed *Feed) parseAgencies(path string, prefix string, fallbackUrl string) 
 		return errors.New("could not open required file agency.txt")
 	}
 
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -525,7 +525,7 @@ func (feed *Feed) parseAgencies(path string, prefix string, fallbackUrl string) 
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
@@ -550,7 +550,7 @@ func (feed *Feed) parseAgencies(path string, prefix string, fallbackUrl string) 
 		}
 
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedAgencies++
 				feed.warn(e)
 				continue
@@ -592,7 +592,7 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 		return errors.New("could not open required file stops.txt")
 	}
 
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -620,7 +620,7 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -633,7 +633,7 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 			}
 		}
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedStops++
 				feed.warn(e)
 				continue
@@ -644,7 +644,7 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 
 		// check if any defined PolygonFilter contains the stop
 		contains := true
-		for _, poly := range feed.opts.PolygonFilter {
+		for _, poly := range feed.Opts.PolygonFilter {
 			contains = false
 			if poly.PolyContains(float64(stop.Lon), float64(stop.Lat)) {
 				contains = true
@@ -687,11 +687,11 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 			if wasFiltered && feed.Stops[id].Location_type < 2 {
 				// continue, the default value "nil" has already be written above
 				continue
-			} else if feed.opts.UseDefValueOnError && feed.Stops[id].Location_type < 2 {
+			} else if feed.Opts.UseDefValueOnError && feed.Stops[id].Location_type < 2 {
 				// continue, the default value "nil" has already be written above
 				feed.warn(locErr)
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				// delete the erroneous entry
 				delete(feed.Stops, id)
 				feed.ErrorStats.DroppedStops++
@@ -704,11 +704,11 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 
 		if (feed.Stops[id].Location_type == 0 || feed.Stops[id].Location_type == 2 || feed.Stops[id].Location_type == 3) && pstop.Location_type != 1 {
 			locErr := fmt.Errorf("(for stop id %s) Station with id %s has location_type=%d, cannot use as parent station here for stop with location_type=%d (must be 1)", id, pid, pstop.Location_type, feed.Stops[id].Location_type)
-			if feed.opts.UseDefValueOnError && !(feed.Stops[id].Location_type == 2 || feed.Stops[id].Location_type == 3) {
+			if feed.Opts.UseDefValueOnError && !(feed.Stops[id].Location_type == 2 || feed.Stops[id].Location_type == 3) {
 				// continue, the default value "nil" has already be written above
 				feed.warn(locErr)
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				// delete the erroneous entry
 				delete(feed.Stops, id)
 				feed.ErrorStats.DroppedStops++
@@ -721,7 +721,7 @@ func (feed *Feed) parseStops(path string, prefix string, geofiltered map[string]
 
 		if feed.Stops[id].Location_type == 4 && pstop.Location_type != 0 {
 			locErr := fmt.Errorf("(for stop id %s) Station with id %s has location_type=%d, cannot use as parent station here for stop with location_type=4 (boarding area), which expects a parent station with location_type=0 (stop/platform)", id, pid, pstop.Location_type)
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				// delete the erroneous entry
 				delete(feed.Stops, id)
 				feed.ErrorStats.DroppedStops++
@@ -745,7 +745,7 @@ func (feed *Feed) parseRoutes(path string, prefix string, filtered map[string]st
 		return errors.New("could not open required file routes.txt")
 	}
 
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -771,7 +771,7 @@ func (feed *Feed) parseRoutes(path string, prefix string, filtered map[string]st
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -783,7 +783,7 @@ func (feed *Feed) parseRoutes(path string, prefix string, filtered map[string]st
 			}
 		}
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedRoutes++
 				feed.warn(e)
 				continue
@@ -792,29 +792,29 @@ func (feed *Feed) parseRoutes(path string, prefix string, filtered map[string]st
 			}
 		}
 
-		if feed.opts.UseStandardRouteTypes {
+		if feed.Opts.UseStandardRouteTypes {
 			route.Type = gtfs.GetTypeFromExtended(route.Type)
 		}
 
-		if feed.opts.UseGoogleSupportedRouteTypes {
+		if feed.Opts.UseGoogleSupportedRouteTypes {
 			route.Type = gtfs.GetSupportedExtendedTypeFromExtended(route.Type)
 		}
 
-		if len(feed.opts.MOTFilter) != 0 {
-			if _, ok := feed.opts.MOTFilter[route.Type]; !ok {
+		if len(feed.Opts.MOTFilter) != 0 {
+			if _, ok := feed.Opts.MOTFilter[route.Type]; !ok {
 				filtered[route.Id] = struct{}{}
 				continue
 			}
 		}
 
-		if len(feed.opts.MOTFilterNeg) != 0 {
-			if _, ok := feed.opts.MOTFilterNeg[route.Type]; ok {
+		if len(feed.Opts.MOTFilterNeg) != 0 {
+			if _, ok := feed.Opts.MOTFilterNeg[route.Type]; ok {
 				filtered[route.Id] = struct{}{}
 				continue
 			}
 		}
 
-		if feed.opts.DryRun {
+		if feed.Opts.DryRun {
 			feed.Routes[route.Id] = route
 		} else {
 			feed.Routes[route.Id] = route
@@ -843,8 +843,8 @@ func (feed *Feed) parseCalendar(path string, prefix string) (err error) {
 		return nil
 	}
 
-	// reader := NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && !feed.opts.KeepAddFlds)
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	// reader := NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && !feed.Opts.KeepAddFlds)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -870,7 +870,7 @@ func (feed *Feed) parseCalendar(path string, prefix string) (err error) {
 		service, e := createServiceFromCalendar(record, flds, feed, prefix)
 
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedServices++
 				feed.warn(e)
 				continue
@@ -881,26 +881,26 @@ func (feed *Feed) parseCalendar(path string, prefix string) (err error) {
 
 		// if service was parsed in-place, nil was returned
 		if service != nil {
-			if feed.opts.DryRun {
+			if feed.Opts.DryRun {
 				feed.Services[service.Id()] = nil
 			} else {
 				feed.Services[service.Id()] = service
 
 				// check if service is completely out of range
-				if !feed.opts.DateFilterStart.IsEmpty() && service.End_date().GetTime().Before(feed.opts.DateFilterStart.GetTime()) || !feed.opts.DateFilterEnd.IsEmpty() && service.Start_date().GetTime().After(feed.opts.DateFilterEnd.GetTime()) {
+				if !feed.Opts.DateFilterStart.IsEmpty() && service.End_date().GetTime().Before(feed.Opts.DateFilterStart.GetTime()) || !feed.Opts.DateFilterEnd.IsEmpty() && service.Start_date().GetTime().After(feed.Opts.DateFilterEnd.GetTime()) {
 					service.SetRawDaymap(0)
 				} else {
 					// we overlap, there are now two cases:
 
 					// 1. A start date is defined, and the service starts before the start time. Set the start time to the new start time
-					if !feed.opts.DateFilterStart.IsEmpty() && service.Start_date().GetTime().Before(feed.opts.DateFilterStart.GetTime()) {
-						service.SetStart_date(feed.opts.DateFilterStart)
+					if !feed.Opts.DateFilterStart.IsEmpty() && service.Start_date().GetTime().Before(feed.Opts.DateFilterStart.GetTime()) {
+						service.SetStart_date(feed.Opts.DateFilterStart)
 						// note: because of the check above, End_date is guaranteed to >= DateFilterStart, so our service remains valid
 					}
 
 					// 2. An end date is defined, and the service ends after the start time. Set the end  time to the new end time
-					if !feed.opts.DateFilterEnd.IsEmpty() && service.End_date().GetTime().After(feed.opts.DateFilterEnd.GetTime()) {
-						service.SetEnd_date(feed.opts.DateFilterEnd)
+					if !feed.Opts.DateFilterEnd.IsEmpty() && service.End_date().GetTime().After(feed.Opts.DateFilterEnd.GetTime()) {
+						service.SetEnd_date(feed.Opts.DateFilterEnd)
 						// note: because of the check above, Start_date is guaranteed to <= DateFilterEnd, so our service remains valid
 					}
 				}
@@ -920,8 +920,8 @@ func (feed *Feed) parseCalendarDates(path string, prefix string) (err error) {
 		return nil
 	}
 
-	// reader := NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && !feed.opts.KeepAddFlds)
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	// reader := NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && !feed.Opts.KeepAddFlds)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -937,10 +937,10 @@ func (feed *Feed) parseCalendarDates(path string, prefix string) (err error) {
 	}
 
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
-		service, e := createServiceFromCalendarDates(record, flds, feed, feed.opts.DateFilterStart, feed.opts.DateFilterEnd, prefix)
+		service, e := createServiceFromCalendarDates(record, flds, feed, feed.Opts.DateFilterStart, feed.Opts.DateFilterEnd, prefix)
 
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedServices++
 				feed.warn(e)
 				continue
@@ -951,7 +951,7 @@ func (feed *Feed) parseCalendarDates(path string, prefix string) (err error) {
 
 		// if service was parsed in-place, nil was returned
 		if service != nil {
-			if feed.opts.DryRun {
+			if feed.Opts.DryRun {
 				feed.Services[service.Id()] = nil
 			} else {
 				feed.Services[service.Id()] = service
@@ -971,7 +971,7 @@ func (feed *Feed) parseTrips(path string, prefix string, filteredRoutes map[stri
 		return errors.New("could not open required file trips.txt")
 	}
 
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -995,7 +995,7 @@ func (feed *Feed) parseTrips(path string, prefix string, filteredRoutes map[stri
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1023,7 +1023,7 @@ func (feed *Feed) parseTrips(path string, prefix string, filteredRoutes map[stri
 			if wasFiltered {
 				filteredTrips[routeNotFoundErr.PayloadId()] = struct{}{}
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedTrips++
 				feed.warn(e)
 				continue
@@ -1050,7 +1050,7 @@ func (feed *Feed) parseTrips(path string, prefix string, filteredRoutes map[stri
 }
 
 func (feed *Feed) reserveShapes(path string, prefix string) (err error) {
-	if feed.opts.DropShapes {
+	if feed.Opts.DropShapes {
 		return
 	}
 	file, e := feed.getFile(path, "shapes.txt")
@@ -1059,7 +1059,7 @@ func (feed *Feed) reserveShapes(path string, prefix string) (err error) {
 		return nil
 	}
 
-	reader := NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && !feed.opts.KeepAddFlds)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && !feed.Opts.KeepAddFlds)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1079,7 +1079,7 @@ func (feed *Feed) reserveShapes(path string, prefix string) (err error) {
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
 		e := reserveShapePoint(record, flds, feed, prefix)
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				continue
 			} else {
 				panic(e)
@@ -1091,7 +1091,7 @@ func (feed *Feed) reserveShapes(path string, prefix string) (err error) {
 }
 
 func (feed *Feed) parseShapes(path string, prefix string) (err error) {
-	if feed.opts.DropShapes {
+	if feed.Opts.DropShapes {
 		return
 	}
 	file, e := feed.getFile(path, "shapes.txt")
@@ -1100,7 +1100,7 @@ func (feed *Feed) parseShapes(path string, prefix string) (err error) {
 		return nil
 	}
 
-	reader := NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && !feed.opts.KeepAddFlds)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && !feed.Opts.KeepAddFlds)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1119,7 +1119,7 @@ func (feed *Feed) parseShapes(path string, prefix string) (err error) {
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1131,7 +1131,7 @@ func (feed *Feed) parseShapes(path string, prefix string) (err error) {
 		shape, sp, e := createShapePoint(record, flds, feed, prefix)
 
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedShapes++
 				feed.warn(e)
 				continue
@@ -1161,7 +1161,7 @@ func (feed *Feed) parseShapes(path string, prefix string) (err error) {
 		for id, shape := range feed.Shapes {
 			if len(shape.Points) == 0 {
 				loce := fmt.Errorf("shape #%s has no points", id)
-				if feed.opts.DropErroneous || len(feed.opts.PolygonFilter) > 0 {
+				if feed.Opts.DropErroneous || len(feed.Opts.PolygonFilter) > 0 {
 					// dont warn here, because this can only happen if a shape point
 					// has been deleted before
 					delete(feed.Shapes, id)
@@ -1171,13 +1171,13 @@ func (feed *Feed) parseShapes(path string, prefix string) (err error) {
 				}
 			}
 			sort.Sort(shape.Points)
-			e = feed.checkShapeMeasure(shape, &feed.opts)
+			e = feed.checkShapeMeasure(shape, &feed.Opts)
 			feed.NumShpPoints += len(shape.Points)
 			if e != nil {
 				break
 			}
 		}
-		if feed.opts.DryRun {
+		if feed.Opts.DryRun {
 			// clear space
 			for id := range feed.Shapes {
 				feed.Shapes[id] = nil
@@ -1194,7 +1194,7 @@ func (feed *Feed) reserveStopTimes(path string, prefix string) (err error) {
 	if e != nil {
 		return errors.New("could not open required file stop_times.txt")
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1224,7 +1224,7 @@ func (feed *Feed) reserveStopTimes(path string, prefix string) (err error) {
 		return errors.New("could not open required file stop_times.txt")
 	}
 
-	reader = NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && flds.stopHeadsign < 0 && !feed.opts.KeepAddFlds)
+	reader = NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && flds.stopHeadsign < 0 && !feed.Opts.KeepAddFlds)
 
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
 		reserveStopTime(record, flds, feed, prefix)
@@ -1239,7 +1239,7 @@ func (feed *Feed) parseStopTimes(path string, prefix string, geofiltered map[str
 	if e != nil {
 		return errors.New("could not open required file stop_times.txt")
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && !feed.opts.KeepAddFlds)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && !feed.Opts.KeepAddFlds)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1265,7 +1265,7 @@ func (feed *Feed) parseStopTimes(path string, prefix string, geofiltered map[str
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1275,7 +1275,7 @@ func (feed *Feed) parseStopTimes(path string, prefix string, geofiltered map[str
 		return errors.New("could not open required file stop_times.txt")
 	}
 
-	reader = NewCsvParser(file, feed.opts.DropErroneous, feed.opts.AssumeCleanCsv && flds.stopHeadsign < 0)
+	reader = NewCsvParser(file, feed.Opts.DropErroneous, feed.Opts.AssumeCleanCsv && flds.stopHeadsign < 0)
 
 	i := 0
 
@@ -1298,7 +1298,7 @@ func (feed *Feed) parseStopTimes(path string, prefix string, geofiltered map[str
 
 			if wasFiltered {
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedStopTimes++
 				feed.warn(e)
 				continue
@@ -1327,7 +1327,7 @@ func (feed *Feed) parseStopTimes(path string, prefix string, geofiltered map[str
 		// sort stoptimes in trips
 		for _, trip := range feed.Trips {
 			sort.Sort(trip.StopTimes)
-			e = feed.checkStopTimeMeasure(trip, &feed.opts)
+			e = feed.checkStopTimeMeasure(trip, &feed.Opts)
 			feed.NumStopTimes += len(trip.StopTimes)
 			if e != nil {
 				break
@@ -1344,7 +1344,7 @@ func (feed *Feed) parseFrequencies(path string, prefix string, filteredTrips map
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1363,7 +1363,7 @@ func (feed *Feed) parseFrequencies(path string, prefix string, filteredTrips map
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1378,7 +1378,7 @@ func (feed *Feed) parseFrequencies(path string, prefix string, filteredTrips map
 
 			if wasFiltered {
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedFrequencies++
 				feed.warn(e)
 				continue
@@ -1412,7 +1412,7 @@ func (feed *Feed) parseFareAttributes(path string, prefix string) (err error) {
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1433,14 +1433,14 @@ func (feed *Feed) parseFareAttributes(path string, prefix string) (err error) {
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
 		fa, e := createFareAttribute(record, flds, feed, prefix)
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedFareAttributes++
 				feed.warn(e)
 				continue
@@ -1472,7 +1472,7 @@ func (feed *Feed) parseFareAttributeRules(path string, prefix string, filteredRo
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1491,7 +1491,7 @@ func (feed *Feed) parseFareAttributeRules(path string, prefix string, filteredRo
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1506,7 +1506,7 @@ func (feed *Feed) parseFareAttributeRules(path string, prefix string, filteredRo
 
 			if wasFiltered {
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedFareAttributeRules++
 				feed.warn(e)
 				continue
@@ -1541,7 +1541,7 @@ func (feed *Feed) parseTransfers(path string, prefix string, geofiltered map[str
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1563,7 +1563,7 @@ func (feed *Feed) parseTransfers(path string, prefix string, geofiltered map[str
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
@@ -1582,7 +1582,7 @@ func (feed *Feed) parseTransfers(path string, prefix string, geofiltered map[str
 
 			if wasFiltered {
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedTransfers++
 				feed.warn(e)
 				continue
@@ -1593,7 +1593,7 @@ func (feed *Feed) parseTransfers(path string, prefix string, geofiltered map[str
 
 		feed.Transfers[tk] = tv
 
-		if !feed.opts.DryRun {
+		if !feed.Opts.DryRun {
 			// add additional CSV fields
 			for _, i := range addFlds {
 				if i < len(record) {
@@ -1618,7 +1618,7 @@ func (feed *Feed) parsePathways(path string, prefix string, geofiltered map[stri
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1644,7 +1644,7 @@ func (feed *Feed) parsePathways(path string, prefix string, geofiltered map[stri
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1664,7 +1664,7 @@ func (feed *Feed) parsePathways(path string, prefix string, geofiltered map[stri
 
 			if wasFiltered {
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedPathways++
 				feed.warn(e)
 				continue
@@ -1696,7 +1696,7 @@ func (feed *Feed) parseTranslations(path string, prefix string) (err error) {
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1717,14 +1717,14 @@ func (feed *Feed) parseTranslations(path string, prefix string) (err error) {
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
 		trans, e := createTranslation(record, flds, feed, prefix)
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedTranslations++
 				feed.warn(e)
 				continue
@@ -1757,7 +1757,7 @@ func (feed *Feed) parseAttributions(path string, prefix string, filteredRoutes m
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1784,7 +1784,7 @@ func (feed *Feed) parseAttributions(path string, prefix string, filteredRoutes m
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
@@ -1816,7 +1816,7 @@ func (feed *Feed) parseAttributions(path string, prefix string, filteredRoutes m
 
 			if wasFiltered {
 				continue
-			} else if feed.opts.DropErroneous {
+			} else if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedAttributions++
 				feed.warn(e)
 				continue
@@ -1863,7 +1863,7 @@ func (feed *Feed) parseLevels(path string, idprefix string) (err error) {
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1880,7 +1880,7 @@ func (feed *Feed) parseLevels(path string, idprefix string) (err error) {
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
@@ -1892,7 +1892,7 @@ func (feed *Feed) parseLevels(path string, idprefix string) (err error) {
 		}
 
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedLevels++
 				feed.warn(e)
 				continue
@@ -1924,7 +1924,7 @@ func (feed *Feed) parseFeedInfos(path string) (err error) {
 	if e != nil {
 		return nil
 	}
-	reader := NewCsvParser(file, feed.opts.DropErroneous, false)
+	reader := NewCsvParser(file, feed.Opts.DropErroneous, false)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -1946,14 +1946,14 @@ func (feed *Feed) parseFeedInfos(path string) (err error) {
 
 	addFlds := make([]int, 0)
 
-	if feed.opts.KeepAddFlds {
+	if feed.Opts.KeepAddFlds {
 		addFlds = addiFields(reader.header, flds)
 	}
 
 	for record = reader.ParseCsvLine(); record != nil; record = reader.ParseCsvLine() {
 		fi, e := createFeedInfo(record, flds, feed)
 		if e != nil {
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedFeedInfos++
 				feed.warn(e)
 				continue
@@ -1961,7 +1961,7 @@ func (feed *Feed) parseFeedInfos(path string) (err error) {
 				panic(e)
 			}
 		}
-		if !feed.opts.DryRun {
+		if !feed.Opts.DryRun {
 			for _, i := range addFlds {
 				if i < len(record) {
 					if _, ok := feed.FeedInfosAddFlds[reader.header[i]]; !ok {
@@ -1988,7 +1988,7 @@ func (feed *Feed) checkShapeMeasure(shape *gtfs.Shape, opt *ParseOptions) error 
 
 		if shape.Points[i-1].Sequence == shape.Points[i].Sequence {
 			e := fmt.Errorf("in shape '%s' for point with seq=%d: stop time sequence collision. Sequence has to increase along shape", shape.Id, shape.Points[i].Sequence)
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedStopTimes++
 				shape.Points = shape.Points[:i+copy(shape.Points[i:], shape.Points[i+1:])]
 				feed.warn(e)
@@ -2027,9 +2027,9 @@ func (feed *Feed) checkStopTimeMeasure(trip *gtfs.Trip, opt *ParseOptions) error
 	for j := 1; j < len(trip.StopTimes)+deleted; j++ {
 		i := j - deleted
 
-		if trip.StopTimes[i-1].Sequence() == trip.StopTimes[i].Sequence() && !feed.opts.SkipStopTimeValidation {
+		if trip.StopTimes[i-1].Sequence() == trip.StopTimes[i].Sequence() && !feed.Opts.SkipStopTimeValidation {
 			e := fmt.Errorf("in trip '%s' for stoptime with seq=%d: stop time sequence collision. Sequence has to increase along trip", trip.Id, trip.StopTimes[i].Sequence())
-			if feed.opts.DropErroneous {
+			if feed.Opts.DropErroneous {
 				feed.ErrorStats.DroppedStopTimes++
 				trip.StopTimes = trip.StopTimes[:i+copy(trip.StopTimes[i:], trip.StopTimes[i+1:])]
 				feed.warn(e)
@@ -2210,7 +2210,7 @@ func (feed *Feed) getGTFSDir() string {
 }
 
 func (feed *Feed) warn(e error) {
-	if feed.opts.ShowWarnings {
+	if feed.Opts.ShowWarnings {
 		fmt.Fprintln(os.Stderr, "WARNING: "+e.Error())
 	}
 }
